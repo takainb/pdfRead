@@ -4,9 +4,10 @@ import java.io.BufferedReader;
 import java.io.BufferedWriter;
 import java.io.File;
 import java.io.FileInputStream;
-import java.io.FileWriter;
+import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.InputStreamReader;
+import java.io.OutputStreamWriter;
 import java.io.PrintWriter;
 import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
@@ -19,6 +20,11 @@ import java.util.Map.Entry;
 import org.apache.pdfbox.pdmodel.PDDocument;
 import org.apache.pdfbox.text.PDFTextStripper;
 
+// TODO １．ログ出力
+// TODO ２．エラーハンドリング
+// TODO ３．データパターン
+// TODO ４．設定ファイルの外だし
+// TODO ５．もう少しよいロジックがあるはず
 
 public class pdfBox1 {
 	
@@ -33,32 +39,36 @@ public class pdfBox1 {
 	public static void main(String...args) throws IOException {
 		
 		if (args.length != 1) {
-			System.out.println("引数エラー");
+			System.out.println("引数エラーです");
 		} else {
 			String filename = args[0].replace(PDF, "");
 			String inputFile = INPUT_PATH + args[0];
 			String outputFile = OUTPUT_PATH + filename + CSV;
 
+			// ヘッダ定義ファイル格納用
 			LinkedHashMap<Integer, String> headerMap = new LinkedHashMap<Integer, String>();
+			// 項目定義ファイル格納用
 			LinkedHashMap<Integer, LinkedHashMap<String, String>> itemListMap = new LinkedHashMap<Integer, LinkedHashMap<String, String>>();
 			List<String> pdfData = new ArrayList<String>();
 
+			// ヘッダ定義ファイル読み込み
 			readHeader(DEFINE_HEAD_FILE, headerMap);
+			// 項目定義ファイル読み込み
 			readItem(DEFINE_ITEM_FILE, itemListMap);
+			// PDFファイル読み込み
 			readPDFFile(inputFile, pdfData);
-			
-//			List<Map<String, String>> dataMap = targetDataExtra(itemListMap, pdfData);
+			// 出力対象データの抜き出し
 			List<Map<String, String>> dataMap = targetDataExtra(headerMap, itemListMap, pdfData);
-			
+			// 出力対象データ加工
 			Map<String, String[]> dataList = dataProcessing(dataMap);
-			
+			// ファイル出力
 			outputResult(dataList, outputFile);
 		}
 	}
 
 	private static void outputResult(Map<String, String[]> dataList, String outputFile) throws IOException {
-		FileWriter fw = new FileWriter(outputFile,false);
-		PrintWriter pw = new PrintWriter(new BufferedWriter(fw));
+		File f = new File(outputFile);
+		PrintWriter pw = new PrintWriter(new BufferedWriter(new OutputStreamWriter(new FileOutputStream(f),"Shift-JIS")));
 		
 		for (Iterator<Entry<String, String[]>> it = dataList.entrySet().iterator(); it.hasNext();) {
 			Entry<String, String[]> entry = it.next();
@@ -102,7 +112,6 @@ public class pdfBox1 {
 		
 		line = line.trim();
 		data = line.split("[\\s]+");
-//		data = line.split(" ");
 		
 		return data;
 	}
@@ -118,28 +127,51 @@ public class pdfBox1 {
 			Entry<Integer, String> entryHeaderMap = it_head.next();
 			
 			boolean isSearch = false;
+			boolean isRepeat = false;
+			String strKey = null;
+			int a = 1;
 			
 			// Header定義がPDFデータに存在しているか
+			// PDFデータ
 			for (Iterator<String> it_pdf = pdfData.iterator(); it_pdf.hasNext();) {
 				String strPdfdata = it_pdf.next();
 				
 				if (!isSearch) {
-					if (strPdfdata.startsWith(entryHeaderMap.getValue())) {
+					// TODO 部分一致？前方一致？
+//					if (strPdfdata.startsWith(entryHeaderMap.getValue())) {
+					if (strPdfdata.indexOf(entryHeaderMap.getValue()) != -1) {
 						// 存在した場合、次の行以降を検索
 						isSearch = true;
 					}
 					continue;
 				}
 
+				if (a > 1) {
+					strData = strData.concat(strPdfdata);
+					a--;
+					continue;
+				}
+				if (isRepeat) {
+					map.put(strKey, strData);
+					a = 1;
+					isRepeat = false;
+				}
+
 				// 存在した場合、項目定義データを取り出す
 				Map<String, String> itemMap = itemListMap.get(entryHeaderMap.getKey());
 				for (Iterator<Entry<String, String>> it_item = itemMap.entrySet().iterator();it_item.hasNext();) {
 					Entry<String, String> entryItemData = it_item.next();
-					if (strPdfdata.startsWith(entryItemData.getKey().split("\r\n")[0])) {
+					String str = entryItemData.getKey().split("\\|")[0];
+					if (strPdfdata.startsWith(str) && !isRepeat) {
 						if (!"1".equals(entryItemData.getValue().split("-")[1])) {
-							strData = strData.concat(strPdfdata.replace("\r\n", ""));
+							strKey = entryItemData.getKey().replaceAll("\\|", "").replaceAll("\\s{2,}", " ").trim();
+							strData = strPdfdata;
+							a = Integer.parseInt(entryItemData.getValue().split("-")[1]);
+							isRepeat = true;
+							it_item.remove();
 							continue;
 						}
+
 						map.put(entryItemData.getKey(), strPdfdata);
 						it_item.remove();
 
@@ -149,49 +181,12 @@ public class pdfBox1 {
 						}
 					}
 				}
-				
 			}
-			
 		}
-		
-		return null;
+		data.add(map);
+		return data;
 	}
 	
-//	private static List<Map<String, String>> targetDataExtra(LinkedHashMap<Integer, LinkedHashMap<String, String>> itemListMap,
-//			List<String> pdfData) {
-//		List<Map<String, String>> data = new ArrayList<Map<String, String>>();
-//		Map<String, String> map = new LinkedHashMap<String, String>();
-//		String strData = null;
-//		// PDF Data
-//		for (Iterator<String> it1 = pdfData.iterator(); it1.hasNext();) {
-//			String strPdfdata = it1.next();
-//			
-//			for (Iterator<Entry<Integer, LinkedHashMap<String, String>>> it2 = itemListMap.entrySet().iterator(); it2
-//					.hasNext();) {
-//				Entry<Integer, LinkedHashMap<String, String>> entryItemMap = it2.next();
-//				
-//				for(Iterator<Entry<String, String>> it3 = entryItemMap.getValue().entrySet().iterator(); it3.hasNext();) {
-//					Entry<String, String> entryItemData = it3.next();
-//					
-//					if (strPdfdata.startsWith(entryItemData.getKey().split("\r\n")[0])) {
-//						if (!"1".equals(entryItemData.getValue().split("-")[1])) {
-//							strData = strData.concat(strPdfdata.replace("\r\n", ""));
-//							continue;
-//						}
-//						map.put(entryItemData.getKey(), strPdfdata);
-//						it3.remove();
-//
-//						if ("E".equals(entryItemData.getValue())) {
-//							data.add(map);
-//							return data;
-//						}
-//					}
-//				}
-//			}
-//		}
-//		return data;
-//	}
-
 	private static void readPDFFile(String inputFile, List<String> pdfData) throws IOException {
 		File file = new File(inputFile);
 		try (PDDocument document = PDDocument.load(file)){
@@ -201,7 +196,7 @@ public class pdfBox1 {
 			// DEBUG
 			System.out.println("[" + text + "]");
 			
-			String[] str = text.split("\r\n");
+			String[] str = text.split("\\r\\n");
 			for (int i=0; i < str.length; i++) {
 				pdfData.add(str[i]);
 			}
@@ -214,7 +209,6 @@ public class pdfBox1 {
 		File file = new File(defineFile);
 		String line = null;
 		LinkedHashMap<String, String> map = new LinkedHashMap<String, String>();
-		// BufferedReader br = new BufferedReader(new FileReader(file));
 		BufferedReader br = new BufferedReader(
 				new InputStreamReader(new FileInputStream(file), StandardCharsets.UTF_8));
 
