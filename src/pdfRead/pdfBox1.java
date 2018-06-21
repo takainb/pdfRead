@@ -126,15 +126,18 @@ public class pdfBox1 {
 		for (Iterator<Entry<Integer, String>> it_head = headerMap.entrySet().iterator(); it_head.hasNext();) {
 			Entry<Integer, String> entryHeaderMap = it_head.next();
 			
-			boolean isSearch = false;
-			boolean isRepeat = false;
+			boolean isSearch = false;	// Header検索用 （余計な検索を省略するため）
+			boolean isRepeat = false;	// 読取対象が複数行あるもの
 			String strKey = null;
+			String strOrgKey = null;
 			int a = 1;
 			
 			// Header定義がPDFデータに存在しているか
 			// PDFデータ
 			for (Iterator<String> it_pdf = pdfData.iterator(); it_pdf.hasNext();) {
 				String strPdfdata = it_pdf.next();
+
+				Map<String, String> itemMap = itemListMap.get(entryHeaderMap.getKey());
 				
 				if (!isSearch) {
 					// TODO 部分一致？前方一致？
@@ -152,23 +155,26 @@ public class pdfBox1 {
 					continue;
 				}
 				if (isRepeat) {
-					map.put(strKey, strData);
+					if (strData.indexOf(strKey) != -1) {
+						map.put(strKey, strData);
+						itemMap.remove(strOrgKey);
+					}
 					a = 1;
 					isRepeat = false;
 				}
 
 				// 存在した場合、項目定義データを取り出す
-				Map<String, String> itemMap = itemListMap.get(entryHeaderMap.getKey());
 				for (Iterator<Entry<String, String>> it_item = itemMap.entrySet().iterator();it_item.hasNext();) {
 					Entry<String, String> entryItemData = it_item.next();
 					String str = entryItemData.getKey().split("\\|")[0];
 					if (strPdfdata.startsWith(str) && !isRepeat) {
 						if (!"1".equals(entryItemData.getValue().split("-")[1])) {
+							strOrgKey = entryItemData.getKey();
 							strKey = entryItemData.getKey().replaceAll("\\|", "").replaceAll("\\s{2,}", " ").trim();
 							strData = strPdfdata;
 							a = Integer.parseInt(entryItemData.getValue().split("-")[1]);
 							isRepeat = true;
-							it_item.remove();
+							//it_item.remove();
 							continue;
 						}
 
