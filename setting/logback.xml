@@ -1,0 +1,53 @@
+<configuration>
+ 
+  <property name="logDir" value="./logs/" />
+  <property name="fileName_info" value="app_info.log" />
+  <property name="fileName_debug" value="app_debug.log" />
+  <property name="format1" value="%d{yyyy/MM/dd HH:mm:ss.SSS} [%t] %-6p %c{10} %m%n" />
+ 
+  <appender name="INFO_FILE" class="ch.qos.logback.core.rolling.RollingFileAppender">
+    <file>${logDir}${fileName_info}</file>
+    
+    <filter class="ch.qos.logback.classic.filter.ThresholdFilter">
+      <level>INFO</level>
+    </filter>   
+    
+    <rollingPolicy class="ch.qos.logback.core.rolling.TimeBasedRollingPolicy">
+      <fileNamePattern>${logDir}${fileName_info}.%d{yyyy-MM-dd}.log</fileNamePattern>
+      <maxHistory>5</maxHistory>
+    </rollingPolicy>
+    
+    <encoder>
+      <pattern>${format1}</pattern>
+    </encoder>
+  </appender>
+
+  <appender name="DEBUG_FILE" class="ch.qos.logback.core.rolling.RollingFileAppender">
+    <file>${logDir}${fileName_debug}</file>
+    
+    <filter class="ch.qos.logback.classic.filter.ThresholdFilter">
+      <level>DEBUG</level>
+    </filter>   
+    
+    <rollingPolicy class="ch.qos.logback.core.rolling.TimeBasedRollingPolicy">
+      <fileNamePattern>${logDir}${fileName_debug}.%d{yyyy-MM-dd}.log</fileNamePattern>
+      <maxHistory>3</maxHistory>
+    </rollingPolicy>
+    
+    <encoder>
+      <pattern>${format1}</pattern>
+    </encoder>
+  </appender>
+ 
+  <appender name="STDOUT" class="ch.qos.logback.core.ConsoleAppender">
+    <encoder>
+      <pattern>${format1}</pattern>
+    </encoder>
+  </appender>
+ 
+  <root level="trace">
+    <appender-ref ref="INFO_FILE" />
+    <appender-ref ref="DEBUG_FILE" />
+    <appender-ref ref="STDOUT" />
+  </root>
+</configuration>

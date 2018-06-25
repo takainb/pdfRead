@@ -2,6 +2,10 @@
 <classpath>
 	<classpathentry kind="con" path="org.eclipse.jdt.launching.JRE_CONTAINER/org.eclipse.jdt.internal.debug.ui.launcher.StandardVMType/JavaSE-1.8"/>
 	<classpathentry kind="src" path="src"/>
-	<classpathentry kind="lib" path="C:/Users/takai/Downloads/pdfbox-app-2.0.9.jar"/>
+	<classpathentry kind="lib" path="C:/Users/takai/eclipse-workspace/pdfRead/jar/pdfbox-app-2.0.9.jar"/>
+	<classpathentry kind="lib" path="C:/Users/takai/eclipse-workspace/pdfRead/jar/logback-classic-1.2.3.jar"/>
+	<classpathentry kind="lib" path="C:/Users/takai/eclipse-workspace/pdfRead/jar/logback-core-1.2.3.jar"/>
+	<classpathentry kind="lib" path="C:/Users/takai/eclipse-workspace/pdfRead/jar/logback-examples/lib/slf4j-api-1.7.25.jar"/>
+	<classpathentry kind="lib" path="setting"/>
 	<classpathentry kind="output" path="bin"/>
 </classpath>

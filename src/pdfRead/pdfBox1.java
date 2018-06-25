@@ -19,6 +19,8 @@ import java.util.Map.Entry;
 
 import org.apache.pdfbox.pdmodel.PDDocument;
 import org.apache.pdfbox.text.PDFTextStripper;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 // TODO １．ログ出力
 // TODO ２．エラーハンドリング
@@ -35,11 +37,14 @@ public class pdfBox1 {
 	public static final String PDF = ".pdf";
 	public static final String CSV = ".csv";
 	public static final String AST = "(*)";
+	public static Logger logger = LoggerFactory.getLogger(pdfBox1.class); 
 	
 	public static void main(String...args) throws IOException {
 		
+		
 		if (args.length != 1) {
-			System.out.println("引数エラーです");
+			logger.error("引数エラーです");
+//			System.out.println("引数エラーです");
 		} else {
 			String filename = args[0].replace(PDF, "");
 			String inputFile = INPUT_PATH + args[0];
@@ -51,6 +56,7 @@ public class pdfBox1 {
 			LinkedHashMap<Integer, LinkedHashMap<String, String>> itemListMap = new LinkedHashMap<Integer, LinkedHashMap<String, String>>();
 			List<String> pdfData = new ArrayList<String>();
 
+			logger.info("START - {}",args[0]);
 			// ヘッダ定義ファイル読み込み
 			readHeader(DEFINE_HEAD_FILE, headerMap);
 			// 項目定義ファイル読み込み
@@ -63,6 +69,8 @@ public class pdfBox1 {
 			Map<String, String[]> dataList = dataProcessing(dataMap);
 			// ファイル出力
 			outputResult(dataList, outputFile);
+			
+			logger.info("END - {}",args[0]);
 		}
 	}
 
@@ -93,7 +101,8 @@ public class pdfBox1 {
 				Entry<String, String> entry = itt.next();
 
 				// DEBUG
-				System.out.println(entry.getKey() + " : " + entry.getValue());
+//				System.out.println(entry.getKey() + " : " + entry.getValue());
+				logger.debug("{} : {}",entry.getKey(), entry.getValue());
 				
 				String[] str = dataTrim(entry.getKey(), entry.getValue());
 				map.put(entry.getKey(), str);
@@ -155,7 +164,8 @@ public class pdfBox1 {
 					continue;
 				}
 				if (isRepeat) {
-					if (strData.indexOf(strKey) != -1) {
+//					if (strData.indexOf(strKey) != -1) {
+					if (strData.startsWith(strKey)) {
 						map.put(strKey, strData);
 						itemMap.remove(strOrgKey);
 					}
@@ -200,7 +210,8 @@ public class pdfBox1 {
 			String text = s.getText(document);
 			
 			// DEBUG
-			System.out.println("[" + text + "]");
+//			System.out.println("[" + text + "]");
+			logger.debug(text);
 			
 			String[] str = text.split("\\r\\n");
 			for (int i=0; i < str.length; i++) {
