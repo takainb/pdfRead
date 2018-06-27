@@ -18,6 +18,7 @@ import java.nio.file.Paths;
 import java.security.CodeSource;
 import java.security.ProtectionDomain;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Iterator;
 import java.util.LinkedHashMap;
 import java.util.List;
@@ -39,10 +40,6 @@ import org.slf4j.LoggerFactory;
 
 public class pdfBox1 {
 
-	// public static final String INPUT_PATH = "C:\\test\\pdf\\";
-	// public static final String OUTPUT_PATH = "C:\\test\\result\\";
-	// public static final String DEFINE_ITEM_FILE = "C:\\test\\item\\item.txt";
-	// public static final String DEFINE_HEAD_FILE = "C:\\test\\item\\header.txt";
 	public static String INPUT_PATH = "";
 	public static String OUTPUT_PATH = "";
 	public static String DEFINE_ITEM_FILE = "";
@@ -62,7 +59,7 @@ public class pdfBox1 {
 
 		// 引数チェック
 		if (args.length != 1) {
-			logger.error("引数が不正です。{}", args.toString());
+			logger.error("引数が不正です。{}", Arrays.toString(args));
 		} else {
 			String filename = args[0].replace(PDF, "");
 
@@ -93,14 +90,14 @@ public class pdfBox1 {
 				// 出力対象データの抜き出し
 				List<Map<String, String>> dataMap = targetDataExtra(headerMap, itemListMap, pdfData);
 
-				if (pdfData.isEmpty()) {
-					logger.info("PDFファイルが読み取れませんでした。フォーマットを確認してください。　ファイル名：{}", args[0]);
-				} else {
-					// 出力対象データ加工
-					Map<String, String[]> dataList = dataProcessing(dataMap);
-					// ファイル出力
-					outputResult(dataList, outputFile);
+				// 出力対象データ加工
+				Map<String, String[]> dataList = dataProcessing(dataMap);
+
+				if (pdfData.isEmpty() || dataList.isEmpty()) {
+					logger.info("PDFファイルのフォント等を確認してください。　ファイル名：{}", args[0]);
 				}
+				// ファイル出力
+				outputResult(dataList, outputFile);
 
 			} catch (Exception e) {
 				logger.error("システムエラーが発生しました", e);
@@ -110,6 +107,10 @@ public class pdfBox1 {
 		}
 	}
 
+	/**
+	 * 改行コードを取得する
+	 * @return 改行コード
+	 */
 	private static String getLineCode() {
 		String lc = System.getProperty("line.separator");
 		return lc;
@@ -218,7 +219,7 @@ public class pdfBox1 {
 			boolean isRepeat = false; // 読取対象が複数行あるもの
 			String strKey = null;
 			String strOrgKey = null;
-			int a = 1;
+			int lineCounter = 1;
 
 			// Header定義がPDFデータに存在しているか
 			// PDFデータ
@@ -238,9 +239,9 @@ public class pdfBox1 {
 				}
 
 				// 読み取り対象が複数行にわたる場合に、一行にする
-				if (a > 1) {
+				if (lineCounter > 1) {
 					strData = strData.concat(strPdfdata);
-					a--;
+					lineCounter--;
 					continue;
 				}
 				if (isRepeat) {
@@ -249,7 +250,7 @@ public class pdfBox1 {
 						map.put(strKey, strData);
 						itemMap.remove(strOrgKey);
 					}
-					a = 1;
+					lineCounter = 1;
 					isRepeat = false;
 				}
 
@@ -262,7 +263,7 @@ public class pdfBox1 {
 							strOrgKey = entryItemData.getKey();
 							strKey = entryItemData.getKey().replaceAll("\\|", "").replaceAll("\\s{2,}", " ").trim();
 							strData = strPdfdata;
-							a = Integer.parseInt(entryItemData.getValue().split("-")[1]);
+							lineCounter = Integer.parseInt(entryItemData.getValue().split("-")[1]);
 							isRepeat = true;
 							// it_item.remove();
 							continue;
@@ -374,12 +375,17 @@ public class pdfBox1 {
 		br.close();
 	}
 
+	/**
+	 * プロパティファイル（ファイルパス設定用）の読み込み
+	 * @throws Exception 例外発生時
+	 */
 	private static void readProperties() throws Exception {
 		
 		ProtectionDomain pd = pdfBox1.class.getProtectionDomain();
 		CodeSource cs = pd.getCodeSource();
 		URL location = cs.getLocation();
 		URI uri = location.toURI();
+		// 実行ファイルの１つ上（親）のファイルパス
 		Path path = Paths.get(uri).getParent();
 		String strPath = new File(path.toString(), "resources").getPath();
 		
